@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://yai-of-satquery.onrender.com/api/:path*"
+    }
+  ]
+}
