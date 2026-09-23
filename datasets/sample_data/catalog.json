@@ -1,0 +1,152 @@
+{
+  "observations": [
+    {
+      "id": "obs_cartosat_t1",
+      "name": "Cartosat-2S / Sentinel-2 Optical T1 (Pre-Flood)",
+      "modality": "optical",
+      "sensor": "Cartosat-2S / Sentinel-2",
+      "acquisition_time": "2026-01-15T10:30:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 10.0,
+      "bands": [
+        "RED",
+        "GREEN",
+        "BLUE",
+        "NIR"
+      ],
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "cartosat_optical_t1.tif",
+      "has_nir": true
+    },
+    {
+      "id": "obs_cartosat_t2",
+      "name": "Cartosat-2S / Sentinel-2 Optical T2 (Peak Flood)",
+      "modality": "optical",
+      "sensor": "Cartosat-2S / Sentinel-2",
+      "acquisition_time": "2026-03-20T10:30:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 10.0,
+      "bands": [
+        "RED",
+        "GREEN",
+        "BLUE",
+        "NIR"
+      ],
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "cartosat_optical_t2.tif",
+      "has_nir": true
+    },
+    {
+      "id": "obs_cartosat_t3",
+      "name": "Cartosat-2S / Sentinel-2 Optical T3 (Post-Flood 3 Months)",
+      "modality": "optical",
+      "sensor": "Cartosat-2S / Sentinel-2",
+      "acquisition_time": "2026-06-15T10:30:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 10.0,
+      "bands": [
+        "RED",
+        "GREEN",
+        "BLUE",
+        "NIR"
+      ],
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "cartosat_optical_t3.tif",
+      "has_nir": true
+    },
+    {
+      "id": "obs_risat_sar_t1",
+      "name": "RISAT-1 / Sentinel-1 SAR T1 (Pre-Flood)",
+      "modality": "SAR",
+      "sensor": "RISAT-1 C-Band SAR",
+      "polarization": [
+        "VV",
+        "VH"
+      ],
+      "acquisition_time": "2026-01-16T05:15:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 10.0,
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "risat_sar_t1.tif",
+      "has_nir": false
+    },
+    {
+      "id": "obs_risat_sar_t2",
+      "name": "RISAT-1 / Sentinel-1 SAR T2 (Peak Flood)",
+      "modality": "SAR",
+      "sensor": "RISAT-1 C-Band SAR",
+      "polarization": [
+        "VV",
+        "VH"
+      ],
+      "acquisition_time": "2026-03-21T05:15:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 10.0,
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "risat_sar_t2.tif",
+      "has_nir": false
+    },
+    {
+      "id": "obs_dem",
+      "name": "SRTM Digital Elevation Model (DEM)",
+      "modality": "dem",
+      "sensor": "SRTM / CartoDEM",
+      "resolution_m": 10.0,
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "dem_elevation.tif",
+      "has_nir": false
+    },
+    {
+      "id": "obs_rgb_only",
+      "name": "Aerial True-Color RGB-Only Snapshot",
+      "modality": "optical",
+      "sensor": "Commercial Drone RGB",
+      "acquisition_time": "2026-02-01T12:00:00Z",
+      "crs": "EPSG:32643",
+      "resolution_m": 0.5,
+      "bands": [
+        "RED",
+        "GREEN",
+        "BLUE"
+      ],
+      "bounds": [
+        77.1,
+        28.6,
+        77.15,
+        28.65
+      ],
+      "filepath": "optical_rgb_only.tif",
+      "has_nir": false
+    }
+  ]
+}
