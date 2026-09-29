@@ -214,40 +214,46 @@ export async function submitOceanQuery(
 
   if (queryLower.includes('atlantic')) {
     regionName = 'Atlantic Ocean';
-    targetLat = 15.0;
+    targetLat = 5.0;
     targetLon = -35.0;
-    targetZoom = 3.5;
-    targetBbox = [-65.0, -20.0, 10.0, 45.0];
+    targetZoom = 2.3;
+    targetBbox = [-85.0, -55.0, 15.0, 60.0];
   } else if (queryLower.includes('pacific')) {
     regionName = 'Pacific Ocean';
     targetLat = 0.0;
     targetLon = -160.0;
-    targetZoom = 3.0;
-    targetBbox = [-175.0, -25.0, -110.0, 25.0];
+    targetZoom = 2.2;
+    targetBbox = [-180.0, -55.0, 180.0, 55.0];
   } else if (queryLower.includes('bay of bengal')) {
     regionName = 'Bay of Bengal';
-    targetLat = 15.0;
-    targetLon = 88.0;
-    targetZoom = 5.8;
-    targetBbox = [80.0, 8.0, 96.0, 22.0];
+    targetLat = 14.5;
+    targetLon = 88.5;
+    targetZoom = 4.8;
+    targetBbox = [80.0, 5.0, 95.0, 22.0];
   } else if (queryLower.includes('arabian sea')) {
     regionName = 'Arabian Sea';
-    targetLat = 16.0;
+    targetLat = 16.5;
     targetLon = 65.0;
-    targetZoom = 5.8;
-    targetBbox = [55.0, 8.0, 75.0, 24.0];
+    targetZoom = 4.5;
+    targetBbox = [50.0, 8.0, 78.0, 25.0];
   } else if (queryLower.includes('southern') || queryLower.includes('antarctic')) {
     regionName = 'Southern Ocean';
-    targetLat = -60.0;
+    targetLat = -65.0;
     targetLon = 0.0;
-    targetZoom = 3.0;
-    targetBbox = [-40.0, -70.0, 40.0, -50.0];
+    targetZoom = 2.2;
+    targetBbox = [-180.0, -75.0, 180.0, -50.0];
   } else if (queryLower.includes('arctic')) {
     regionName = 'Arctic Ocean';
-    targetLat = 82.0;
+    targetLat = 80.0;
     targetLon = 0.0;
-    targetZoom = 3.0;
-    targetBbox = [-30.0, 70.0, 30.0, 88.0];
+    targetZoom = 2.5;
+    targetBbox = [-180.0, 65.0, 180.0, 90.0];
+  } else if (queryLower.includes('indian')) {
+    regionName = 'Indian Ocean';
+    targetLat = -10.0;
+    targetLon = 75.0;
+    targetZoom = 2.6;
+    targetBbox = [35.0, -45.0, 110.0, 25.0];
   }
 
   if (queryLower.includes('anomaly')) field = 'anomaly';

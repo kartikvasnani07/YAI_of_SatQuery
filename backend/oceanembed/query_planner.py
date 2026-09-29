@@ -10,15 +10,16 @@ import re
 def parse_ocean_query(prompt: str) -> Dict[str, Any]:
     """
     Parses user natural language ocean query into a deterministic operational plan schema.
+    Returns expansive ocean bounding boxes matching real global geographical boundaries.
     """
     query_lower = prompt.lower()
 
     intent = "DEPTH_SLICE"
     target_depth = 100.0
-    lat = 15.0
-    lon = 72.5
-    zoom = 5.2
-    region = "North Indian Ocean"
+    lat = 0.0
+    lon = 0.0
+    zoom = 2.2
+    region = "Global Ocean"
     target_field = "temperature"
 
     # Extract depth if present e.g., "100 m", "100m", "200 m"
@@ -48,35 +49,39 @@ def parse_ocean_query(prompt: str) -> Dict[str, Any]:
     elif "embedding" in query_lower or "latent" in query_lower:
         intent = "EMBEDDING_EXPLORER"
 
-    # Detect Ocean / Region
+    # Detect Ocean / Region with full-scale geographical bounding boxes
     if "atlantic" in query_lower:
         region = "Atlantic Ocean"
-        lat, lon, zoom = 15.0, -35.0, 3.5
-        bbox = [-65.0, -20.0, 10.0, 45.0]
+        lat, lon, zoom = 5.0, -35.0, 2.3
+        bbox = [-85.0, -55.0, 15.0, 60.0]
     elif "pacific" in query_lower:
         region = "Pacific Ocean"
-        lat, lon, zoom = 0.0, -160.0, 3.0
-        bbox = [-175.0, -25.0, -110.0, 25.0]
+        lat, lon, zoom = 0.0, -160.0, 2.2
+        bbox = [-180.0, -55.0, 180.0, 55.0]
     elif "arabian sea" in query_lower:
         region = "Arabian Sea"
-        lat, lon, zoom = 16.0, 65.0, 5.8
-        bbox = [55.0, 8.0, 75.0, 24.0]
+        lat, lon, zoom = 16.5, 65.0, 4.5
+        bbox = [50.0, 8.0, 78.0, 25.0]
     elif "bay of bengal" in query_lower:
         region = "Bay of Bengal"
-        lat, lon, zoom = 15.0, 88.0, 5.8
-        bbox = [80.0, 8.0, 96.0, 22.0]
+        lat, lon, zoom = 14.5, 88.5, 4.8
+        bbox = [80.0, 5.0, 95.0, 22.0]
     elif "southern" in query_lower or "antarctic" in query_lower:
         region = "Southern Ocean"
-        lat, lon, zoom = -60.0, 0.0, 3.0
-        bbox = [-40.0, -70.0, 40.0, -50.0]
+        lat, lon, zoom = -65.0, 0.0, 2.2
+        bbox = [-180.0, -75.0, 180.0, -50.0]
     elif "arctic" in query_lower:
         region = "Arctic Ocean"
-        lat, lon, zoom = 82.0, 0.0, 3.0
-        bbox = [-30.0, 70.0, 30.0, 88.0]
-    else:
+        lat, lon, zoom = 80.0, 0.0, 2.5
+        bbox = [-180.0, 65.0, 180.0, 90.0]
+    elif "indian" in query_lower:
         region = "Indian Ocean"
-        lat, lon, zoom = 10.0, 75.0, 4.5
-        bbox = [50.0, -15.0, 95.0, 25.0]
+        lat, lon, zoom = -10.0, 75.0, 2.6
+        bbox = [35.0, -45.0, 110.0, 25.0]
+    else:
+        region = "Target Region"
+        lat, lon, zoom = 15.0, 72.5, 3.5
+        bbox = [50.0, 0.0, 95.0, 30.0]
 
     params = {
         "depth_m": target_depth,
@@ -89,7 +94,6 @@ def parse_ocean_query(prompt: str) -> Dict[str, Any]:
         "target_field": target_field
     }
 
-    # Generate structured steps for UI workflow trace
     steps = [
         {"id": "step_1", "title": f"Route Map View to {region}", "tool": "GeographicRouter", "status": "completed"},
         {"id": "step_2", "title": f"Harmonize {target_field.upper()} Surface Observations", "tool": "GridHarmonizer", "status": "completed"},

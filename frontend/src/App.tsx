@@ -1,5 +1,5 @@
 // frontend/src/App.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Header } from './components/Header';
 import { DepthControlBar } from './components/DepthControlBar';
 import { OceanExplorerMap } from './components/OceanExplorerMap';
@@ -31,28 +31,28 @@ export function App() {
   const [argoData, setArgoData] = useState<GeoJSONCollection | undefined>(undefined);
   const [bathymetryData, setBathymetryData] = useState<GeoJSONCollection | undefined>(undefined);
 
-  // Selected Location, Camera Center & Selected Region Box state
-  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lon: number }>({ lat: 15.25, lon: 72.50 });
-  const [selectedCenter, setSelectedCenter] = useState<{ lat: number; lon: number; zoom?: number }>({ lat: 15.0, lon: 75.0, zoom: 5.2 });
+  // Blank initial load state (Global ocean map view, no pre-selected region pin)
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lon: number } | undefined>(undefined);
+  const [selectedCenter, setSelectedCenter] = useState<{ lat: number; lon: number; zoom?: number }>({ lat: 20.0, lon: 0.0, zoom: 2.2 });
   const [selectedRegionBounds, setSelectedRegionBounds] = useState<SelectedRegionBounds | null>(null);
 
   const [pointProfile, setPointProfile] = useState<PointProfile | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [analysis, setAnalysis] = useState<OceanAnalysisResponse | undefined>(undefined);
 
+  // Resizable Right Drawer Splitter State (default 380px, min 280px, max 650px)
+  const [drawerWidth, setDrawerWidth] = useState<number>(380);
+  const isDraggingSplitter = useRef<boolean>(false);
+
   // Initial Data Fetching
   useEffect(() => {
     fetchArgoLocations().then(setArgoData).catch(console.error);
     fetchBathymetry().then(setBathymetryData).catch(console.error);
-
-    fetchPointProfile(15.25, 72.50, selectedDate)
-      .then(setPointProfile)
-      .catch(console.error);
   }, []);
 
   // Fetch 2D grid slice on depth, date, field, or camera center change
   useEffect(() => {
-    fetchReconstructionSlice(currentDepth, selectedDate, activeField, selectedCenter.lat, selectedCenter.lon, analysis?.location?.name || 'North Indian Ocean')
+    fetchReconstructionSlice(currentDepth, selectedDate, activeField, selectedCenter.lat, selectedCenter.lon, analysis?.location?.name || 'Global Ocean')
       .then(setGridData)
       .catch(console.error);
   }, [currentDepth, selectedDate, activeField, selectedCenter, analysis]);
@@ -72,7 +72,7 @@ export function App() {
   const handleExecuteQuery = async (queryStr: string) => {
     setIsLoading(true);
     try {
-      const res = await submitOceanQuery(queryStr, currentDepth, selectedPoint.lat, selectedPoint.lon, selectedDate);
+      const res = await submitOceanQuery(queryStr, currentDepth, selectedPoint?.lat || 15.0, selectedPoint?.lon || 75.0, selectedDate);
       setAnalysis(res);
 
       if (res.grid) {
@@ -90,13 +90,35 @@ export function App() {
       if (res.location && res.location.center) {
         const [lon, lat] = res.location.center;
         setSelectedPoint({ lat, lon });
-        setSelectedCenter({ lat, lon, zoom: res.location.zoom || 5.2 });
+        setSelectedCenter({ lat, lon, zoom: res.location.zoom || 2.5 });
       }
     } catch (e) {
       console.error('Query error:', e);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Resizable Drawer Drag Listeners
+  const handleMouseDownSplitter = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingSplitter.current = true;
+    document.addEventListener('mousemove', handleMouseMoveSplitter);
+    document.addEventListener('mouseup', handleMouseUpSplitter);
+  };
+
+  const handleMouseMoveSplitter = (e: MouseEvent) => {
+    if (!isDraggingSplitter.current) return;
+    const newW = window.innerWidth - e.clientX;
+    if (newW >= 280 && newW <= 650) {
+      setDrawerWidth(newW);
+    }
+  };
+
+  const handleMouseUpSplitter = () => {
+    isDraggingSplitter.current = false;
+    document.removeEventListener('mousemove', handleMouseMoveSplitter);
+    document.removeEventListener('mouseup', handleMouseUpSplitter);
   };
 
   const handleExportReport = () => {
@@ -157,7 +179,7 @@ export function App() {
                 selectedRegionBounds={selectedRegionBounds}
               />
 
-              {/* Reconstruction Depth Level Control Bar: ONLY rendered in 3D Ocean mode as requested! */}
+              {/* Depth Control Bar: ONLY rendered in 3D Ocean mode as requested */}
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-3">
                 <DepthControlBar
                   currentDepth={currentDepth}
@@ -167,14 +189,28 @@ export function App() {
             </div>
           )}
 
-          {activeView === 'argo' && <ArgoValidationView />}
+          {activeView === 'argo' && <ArgoValidationView selectedRegion={analysis?.location?.name} />}
 
-          {activeView === 'embedding' && <EmbeddingExplorerView />}
+          {activeView === 'embedding' && <EmbeddingExplorerView selectedRegion={analysis?.location?.name} />}
         </div>
 
-        {/* Right Drawer: Integrated AI Research Assistant, Region Filter Analyzer & Profile Drawer */}
+        {/* Resizable Vertical Splitter Bar */}
         {(activeView === 'map' || activeView === '3d') && (
-          <div className="w-80 shrink-0 h-full z-20 shadow-2xl bg-[#1e1e1e] border-l border-[#373737]">
+          <div
+            onMouseDown={handleMouseDownSplitter}
+            className="w-1.5 hover:w-2 bg-[#373737] hover:bg-[#38bdf8] cursor-col-resize transition-all shrink-0 flex items-center justify-center z-30 group"
+            title="Drag to resize panel"
+          >
+            <div className="w-0.5 h-6 bg-[#9ca3af] group-hover:bg-[#000000] rounded" />
+          </div>
+        )}
+
+        {/* Right Drawer: AI Research Assistant, Region Analyzer & Profile Drawer */}
+        {(activeView === 'map' || activeView === '3d') && (
+          <div
+            style={{ width: `${drawerWidth}px` }}
+            className="shrink-0 h-full z-20 shadow-2xl bg-[#1e1e1e] border-l border-[#373737]"
+          >
             <OceanProfileDrawer
               profile={pointProfile}
               analysis={analysis}

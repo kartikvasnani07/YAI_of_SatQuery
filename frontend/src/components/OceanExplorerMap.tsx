@@ -54,8 +54,8 @@ export const OceanExplorerMap: React.FC<OceanExplorerMapProps> = ({
     const mapInstance = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
-      center: [selectedCenter?.lon || 75.0, selectedCenter?.lat || 15.0],
-      zoom: selectedCenter?.zoom || 5.2,
+      center: [selectedCenter?.lon ?? 0.0, selectedCenter?.lat ?? 20.0],
+      zoom: selectedCenter?.zoom ?? 2.2,
       pitch: 0,
       bearing: 0
     });
@@ -435,7 +435,15 @@ export const OceanExplorerMap: React.FC<OceanExplorerMapProps> = ({
 
   // Location Marker Anchor
   useEffect(() => {
-    if (!map.current || !selectedPoint) return;
+    if (!map.current) return;
+
+    if (!selectedPoint) {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      return;
+    }
 
     if (!markerRef.current) {
       const el = document.createElement('div');
