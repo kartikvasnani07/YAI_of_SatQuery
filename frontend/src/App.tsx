@@ -1,244 +1,187 @@
+// frontend/src/App.tsx
 import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header';
-import { ProjectSidebar } from './components/ProjectSidebar';
-import { TopoIntroSplash } from './components/TopoIntroSplash';
-import { ReportPreviewModal } from './components/ReportPreviewModal';
-import { AnalysisPlanView } from './components/AnalysisPlanView';
-import { MapCanvas } from './components/MapCanvas';
-import { EvidenceGraphView } from './components/EvidenceGraphView';
-import { MultimodalInspector } from './components/MultimodalInspector';
-import { TerrainProfileView } from './components/TerrainProfileView';
-import { LayerManager } from './components/LayerManager';
-import { ResultSummary } from './components/ResultSummary';
+import { DepthControlBar } from './components/DepthControlBar';
+import { OceanExplorerMap } from './components/OceanExplorerMap';
+import { Ocean3DViewer } from './components/Ocean3DViewer';
+import { OceanProfileDrawer } from './components/OceanProfileDrawer';
+import { ArgoValidationView } from './components/ArgoValidationView';
+import { EmbeddingExplorerView } from './components/EmbeddingExplorerView';
+import { OverviewDashboard } from './components/OverviewDashboard';
 
-import { Observation, AnalysisResponse, GeoJSONLayer } from './types';
-import { fetchObservations, submitQuery } from './services/api';
+import { PointProfile, GeoJSONCollection, OceanAnalysisResponse, DensityField, SelectedRegionBounds } from './types';
+import {
+  fetchReconstructionSlice,
+  fetchPointProfile,
+  fetchArgoLocations,
+  fetchBathymetry,
+  submitOceanQuery
+} from './services/api';
+
+import { OceanCurrentsTidesView } from './components/OceanCurrentsTidesView';
 
 export function App() {
-  const [showSplash, setShowSplash] = useState<boolean>(true);
-  const [showReportPreview, setShowReportPreview] = useState<boolean>(false);
+  const [activeView, setActiveView] = useState<'overview' | 'map' | 'currents' | '3d' | 'argo' | 'embedding'>('map');
+  const [currentDepth, setCurrentDepth] = useState<number>(100);
+  const [selectedDate, setSelectedDate] = useState<string>('2026-01-15');
+  const [activeField, setActiveField] = useState<DensityField>('temperature');
 
-  const [observations, setObservations] = useState<Observation[]>([]);
-  const [selectedObsId, setSelectedObsId] = useState<string>('obs_cartosat_t1');
-  const [activeView, setActiveView] = useState<'map' | 'evidence' | 'inspector' | 'terrain'>('map');
+  // Datasets state
+  const [gridData, setGridData] = useState<GeoJSONCollection | undefined>(undefined);
+  const [argoData, setArgoData] = useState<GeoJSONCollection | undefined>(undefined);
+  const [bathymetryData, setBathymetryData] = useState<GeoJSONCollection | undefined>(undefined);
+
+  // Selected Location, Camera Center & Selected Region Box state
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lon: number }>({ lat: 15.25, lon: 72.50 });
+  const [selectedCenter, setSelectedCenter] = useState<{ lat: number; lon: number; zoom?: number }>({ lat: 15.0, lon: 75.0, zoom: 5.2 });
+  const [selectedRegionBounds, setSelectedRegionBounds] = useState<SelectedRegionBounds | null>(null);
+
+  const [pointProfile, setPointProfile] = useState<PointProfile | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [analysis, setAnalysis] = useState<AnalysisResponse | undefined>(undefined);
-  const [layers, setLayers] = useState<GeoJSONLayer[]>([]);
-  const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
+  const [analysis, setAnalysis] = useState<OceanAnalysisResponse | undefined>(undefined);
 
-  // Project & Chat History state
-  const [projectsData, setProjectsData] = useState<any>({ projects: [], active_project_id: 'proj_default' });
-  const [activeProjectId, setActiveProjectId] = useState<string>('proj_default');
-  const [activeChatId, setActiveChatId] = useState<string | undefined>(undefined);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(true);
+  // Initial Data Fetching
+  useEffect(() => {
+    fetchArgoLocations().then(setArgoData).catch(console.error);
+    fetchBathymetry().then(setBathymetryData).catch(console.error);
 
-  const fetchProjects = async () => {
+    fetchPointProfile(15.25, 72.50, selectedDate)
+      .then(setPointProfile)
+      .catch(console.error);
+  }, []);
+
+  // Fetch 2D grid slice on depth, date, field, or camera center change
+  useEffect(() => {
+    fetchReconstructionSlice(currentDepth, selectedDate, activeField, selectedCenter.lat, selectedCenter.lon, analysis?.location?.name || 'North Indian Ocean')
+      .then(setGridData)
+      .catch(console.error);
+  }, [currentDepth, selectedDate, activeField, selectedCenter, analysis]);
+
+  // Handle Point-Click on Ocean Map
+  const handleMapClickPoint = async (lat: number, lon: number) => {
+    setSelectedPoint({ lat, lon });
     try {
-      const res = await fetch('/api/projects');
-      if (res.ok) {
-        const data = await res.json();
-        setProjectsData(data);
-        if (data.active_project_id) {
-          setActiveProjectId(data.active_project_id);
-        }
-      }
+      const prof = await fetchPointProfile(lat, lon, selectedDate);
+      setPointProfile(prof);
     } catch (e) {
       console.error(e);
     }
   };
 
-  useEffect(() => {
-    fetchObservations()
-      .then((data) => {
-        setObservations(data);
-        if (data.length > 0) {
-          setSelectedObsId(data[0].id);
-        }
-      })
-      .catch(console.error);
-
-    fetchProjects();
-  }, []);
-
-  const handleExecuteQuery = async (queryStr: string, obsId: string, files: any[] = []) => {
+  // Handle AI Assistant / Multi-Ocean Query Execution
+  const handleExecuteQuery = async (queryStr: string) => {
     setIsLoading(true);
-    setAttachedFiles(files);
     try {
-      const res = await submitQuery(queryStr, obsId, files, activeProjectId);
+      const res = await submitOceanQuery(queryStr, currentDepth, selectedPoint.lat, selectedPoint.lon, selectedDate);
       setAnalysis(res);
-      setActiveChatId(res.id);
-      if (res.layers) {
-        setLayers(res.layers.map((l) => ({ ...l, visible: true })));
-      } else {
-        setLayers([]);
+
+      if (res.grid) {
+        setGridData(res.grid);
       }
-      fetchProjects();
-    } catch (err) {
-      console.error(err);
+      if (res.target_field) {
+        setActiveField(res.target_field as DensityField);
+      }
+      if (res.depth_m) {
+        setCurrentDepth(res.depth_m);
+      }
+      if (res.profile) {
+        setPointProfile(res.profile);
+      }
+      if (res.location && res.location.center) {
+        const [lon, lat] = res.location.center;
+        setSelectedPoint({ lat, lon });
+        setSelectedCenter({ lat, lon, zoom: res.location.zoom || 5.2 });
+      }
+    } catch (e) {
+      console.error('Query error:', e);
     } finally {
       setIsLoading(false);
     }
-
   };
 
-  const handleCreateProject = async (name: string) => {
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        const newProj = await res.json();
-        setActiveProjectId(newProj.id);
-        fetchProjects();
-      }
-    } catch (e) {
-      console.error(e);
-    }
+  const handleExportReport = () => {
+    window.open('/api/reports/report_latest/view', '_blank');
   };
-
-  const handleDeleteChat = async (chatId: string) => {
-    try {
-      const res = await fetch(`/api/projects/${activeProjectId}/chats/${chatId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        setProjectsData((prev: any) => ({
-          ...prev,
-          projects: prev.projects.map((p: any) =>
-            p.id === activeProjectId
-              ? { ...p, chats: p.chats.filter((c: any) => strId(c.id) !== strId(chatId)) }
-              : p
-          )
-        }));
-
-        if (activeChatId === chatId) {
-          setAnalysis(undefined);
-          setLayers([]);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const strId = (val: any) => String(val || '');
-
-  const handleClearChats = async () => {
-    try {
-      const res = await fetch(`/api/projects/${activeProjectId}/chats`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        setAnalysis(undefined);
-        setLayers([]);
-        fetchProjects();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleSelectChat = (chat: any) => {
-    setActiveChatId(chat.id);
-    setAnalysis(chat);
-    if (chat.layers) {
-      setLayers(chat.layers.map((l: any) => ({ ...l, visible: true })));
-    }
-  };
-
-  const activeProject = projectsData.projects.find((p: any) => p.id === activeProjectId) || projectsData.projects[0];
-  const activeChats = activeProject?.chats || [];
-  const currentObs = observations.find((o) => o.id === selectedObsId);
-  const visibleLayers = layers.filter((l) => l.visible !== false);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#000000] text-slate-100 overflow-hidden font-sans relative">
-      {/* Animated Topographical Contouring Line Splash */}
-      {showSplash && <TopoIntroSplash onComplete={() => setShowSplash(false)} />}
-
-      {/* In-App Report Preview Modal */}
-      {showReportPreview && (
-        <ReportPreviewModal analysis={analysis} onClose={() => setShowReportPreview(false)} />
-      )}
-
-      {/* Top Executive Header */}
+    <div className="flex flex-col h-screen w-screen bg-[#000000] text-[#ffffff] overflow-hidden font-sans relative select-none">
+      {/* Top Header Navbar */}
       <Header
-        observations={observations}
-        selectedObsId={selectedObsId}
-        onSelectObs={setSelectedObsId}
-        onExecuteQuery={handleExecuteQuery}
-        isLoading={isLoading}
-        hasReport={!!analysis?.report_path}
-        onOpenReportPreview={() => setShowReportPreview(true)}
-        activeView={activeView as any}
-        onViewChange={setActiveView as any}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        isDrawerOpen={isDrawerOpen}
-        onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        onExportPdfReport={handleExportReport}
       />
 
       {/* Main Workstation Layout */}
       <div className="flex flex-1 min-h-0 overflow-hidden relative">
-        {/* Left Sidebar: Projects & Chat History */}
-        {isSidebarOpen && (
-          <ProjectSidebar
-            projects={projectsData.projects}
-            activeProjectId={activeProjectId}
-            onSelectProject={setActiveProjectId}
-            onCreateProject={handleCreateProject}
-            chats={activeChats}
-            activeChatId={activeChatId}
-            onSelectChat={handleSelectChat}
-            onDeleteChat={handleDeleteChat}
-            onClearChats={handleClearChats}
-          />
-        )}
-
-        {/* Center Main Stage Workspace */}
-        <div className="flex-1 h-full relative overflow-hidden bg-[#000000]">
-          {activeView === 'map' && (
-            <MapCanvas
-              layers={visibleLayers}
-              observation={currentObs}
-              selectedObsId={selectedObsId}
-              location={analysis?.location}
+        {/* Center View Stage */}
+        <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-[#000000]">
+          {activeView === 'overview' && (
+            <OverviewDashboard
+              onNavigateView={setActiveView}
+              onSelectDepth={setCurrentDepth}
+              onSelectField={setActiveField}
             />
           )}
 
-          {activeView === 'evidence' && (
-            <EvidenceGraphView graph={analysis?.evidence_graph} />
+          {activeView === 'map' && (
+            <div className="flex-1 relative overflow-hidden">
+              <OceanExplorerMap
+                gridData={gridData}
+                argoData={argoData}
+                bathymetryData={bathymetryData}
+                onMapClickPoint={handleMapClickPoint}
+                selectedPoint={selectedPoint}
+                selectedCenter={selectedCenter}
+                activeField={activeField}
+                onFieldChange={setActiveField}
+                selectedRegionBounds={selectedRegionBounds}
+                onSelectRegionBounds={setSelectedRegionBounds}
+              />
+            </div>
           )}
 
-          {activeView === 'inspector' && (
-            <MultimodalInspector attachedFiles={attachedFiles} />
+          {activeView === 'currents' && (
+            <div className="flex-1 relative overflow-hidden">
+              <OceanCurrentsTidesView selectedDate={selectedDate} />
+            </div>
           )}
 
-          {activeView === 'terrain' && <TerrainProfileView location={analysis?.location} />}
+          {activeView === '3d' && (
+            <div className="flex-1 relative overflow-hidden">
+              <Ocean3DViewer
+                currentDepth={currentDepth}
+                onDepthChange={setCurrentDepth}
+                selectedRegionBounds={selectedRegionBounds}
+              />
+
+              {/* Reconstruction Depth Level Control Bar: ONLY rendered in 3D Ocean mode as requested! */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-3">
+                <DepthControlBar
+                  currentDepth={currentDepth}
+                  onDepthChange={setCurrentDepth}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeView === 'argo' && <ArgoValidationView />}
+
+          {activeView === 'embedding' && <EmbeddingExplorerView />}
         </div>
 
-        {/* Right Collapsible Inspection Panel Drawer */}
-        {isDrawerOpen && (
-          <div className="w-80 shrink-0 h-full bg-[#1E1E1E] border-l border-[#373737] p-4 space-y-4 overflow-y-auto z-20 animate-fade-in shadow-2xl">
-            {/* Scientific Analysis Plan Execution */}
-            <AnalysisPlanView
-              plan={analysis?.plan}
-              refusal={analysis?.refusal}
+        {/* Right Drawer: Integrated AI Research Assistant, Region Filter Analyzer & Profile Drawer */}
+        {(activeView === 'map' || activeView === '3d') && (
+          <div className="w-80 shrink-0 h-full z-20 shadow-2xl bg-[#1e1e1e] border-l border-[#373737]">
+            <OceanProfileDrawer
+              profile={pointProfile}
+              analysis={analysis}
+              onExecuteQuery={handleExecuteQuery}
               isLoading={isLoading}
-            />
-
-            {/* Verified Answer & Quantitative Metrics */}
-            <ResultSummary analysis={analysis} />
-
-            {/* Multi-Layer Manager */}
-            <LayerManager
-              layers={layers}
-              onToggleVisibility={(id) =>
-                setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)))
-              }
+              selectedRegionBounds={selectedRegionBounds}
+              onClearRegion={() => setSelectedRegionBounds(null)}
             />
           </div>
         )}
@@ -246,5 +189,5 @@ export function App() {
     </div>
   );
 }
-export default App;
 
+export default App;

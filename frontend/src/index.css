@@ -2,60 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #000000;
-    color: #e5e7eb;
+:root {
+  --color-1: #6c6c6c;
+  --color-2: #545454;
+  --color-3: #373737;
+  --color-4: #1e1e1e;
+  --color-5: #000000;
+
+  --bg-main: var(--color-5);
+  --surface-card: var(--color-4);
+  --border-card: var(--color-3);
+  --text-muted: var(--color-2);
+  --accent-gray: var(--color-1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-5);
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Wave Logo Smooth Motion Keyframes */
+@keyframes wave-motion {
+  0% {
+    transform: translateX(0) scaleY(1);
   }
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+  50% {
+    transform: translateX(-25%) scaleY(1.15);
   }
-}
-
-/* Custom Executive Workstation Scrollbars */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: #000000;
-}
-::-webkit-scrollbar-thumb {
-  background: #373737;
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #545454;
-}
-
-/* Topographical Path Animation Keyframes */
-.topo-path {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: drawTopo 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.path-1 { animation-delay: 0.1s; }
-.path-2 { animation-delay: 0.3s; }
-.path-3 { animation-delay: 0.5s; }
-.path-4 { animation-delay: 0.7s; }
-
-@keyframes drawTopo {
-  to {
-    stroke-dashoffset: 0;
+  100% {
+    transform: translateX(0) scaleY(1);
   }
 }
 
-/* Subtle micro-animation transitions */
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
+.animate-wave-motion {
+  animation: wave-motion 3.5s ease-in-out infinite;
 }
 
-@keyframes fadeIn {
+/* Fade-in & Slide-in transitions for panels and graph updates */
+@keyframes fade-slide-in {
   from {
     opacity: 0;
-    transform: translateY(3px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -63,8 +55,25 @@
   }
 }
 
-/* Map Canvas Container */
-.maplibre-container {
-  width: 100%;
-  height: 100%;
+.animate-fade-in {
+  animation: fade-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom sleek minimal scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-1);
 }
